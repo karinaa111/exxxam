@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title> Branches</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, #f26ab2 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+    color: #2d3748;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  h1 {
+    color: white;
+    text-align: center;
+    margin-bottom: 8px;
+    font-size: 2.5rem;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .subtitle {
+    text-align: center;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 32px;
+    font-size: 1rem;
+  }
+  .endpoints {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    color: white;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+  }
+  .endpoints code {
+    background: rgba(0,0,0,0.25);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 40px rgba(0,0,0,0.2);
+  }
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f5;
+  }
+  .card h2 {
+    font-size: 1.25rem;
+    color: #2d3748;
+  }
+  .badge {
+    background: linear-gradient(135deg, #f26ab2, #764ba2);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .field {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 10px 0;
+    color: #4a5568;
+    font-size: 0.95rem;
+  }
+  .field .ico { width: 18px; flex-shrink: 0; }
+  .btn {
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f26ab2, #764ba2);
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .editing input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+  .empty {
+    text-align: center;
+    color: white;
+    padding: 60px 20px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 16px;
+  }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #2d3748;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1> Філії</h1>
+  <p class="subtitle">Список усіх філій компанії</p>
+
+  {% if branches %}
+  <div class="grid">
+    {% for b in branches %}
+    <div class="card" data-id="{{ b.id }}">
+      <div class="view-mode">
+        <div class="card-header">
+          <h2 class="b-name">{{ b.name }}</h2>
+          <span class="badge">#{{ b.id }}</span>
+        </div>
+        <div class="field"><span class="ico">📍</span><span class="b-address">{{ b.address }}</span></div>
+        <div class="field"><span class="ico">📞</span><span class="b-phone">{{ b.phone }}</span></div>
+        <button class="btn" onclick="edit(this)">Редагувати</button>
+      </div>
+      <div class="editing" style="display:none">
+        <div class="card-header">
+          <h2>Редагування</h2>
+          <span class="badge">#{{ b.id }}</span>
+        </div>
+        <input class="i-name" value="{{ b.name }}" placeholder="Назва">
+        <input class="i-address" value="{{ b.address }}" placeholder="Адреса">
+        <input class="i-phone" value="{{ b.phone }}" placeholder="Телефон">
+        <button class="btn" onclick="save(this)">Зберегти</button>
+        <button class="btn" style="background:#cbd5e0;margin-top:8px" onclick="cancel(this)">Скасувати</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <div class="empty">
+      <h2>Поки немає філій</h2>
+      <p style="margin-top:8px;opacity:0.85">Виконайте: <code>python manage.py seed</code></p>
+    </div>
+  {% endif %}
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+function getCard(el) { return el.closest('.card'); }
+function edit(btn) {
+  const c = getCard(btn);
+  c.querySelector('.view-mode').style.display = 'none';
+  c.querySelector('.editing').style.display = 'block';
+}
+function cancel(btn) {
+  const c = getCard(btn);
+  c.querySelector('.editing').style.display = 'none';
+  c.querySelector('.view-mode').style.display = 'block';
+}
+async function save(btn) {
+  const c = getCard(btn);
+  const id = c.dataset.id;
+  const payload = {
+    name: c.querySelector('.i-name').value,
+    address: c.querySelector('.i-address').value,
+    phone: c.querySelector('.i-phone').value,
+  };
+  const r = await fetch(`/branches/${id}/`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (r.ok) {
+    const { branch } = await r.json();
+    c.querySelector('.b-name').textContent = branch.name;
+    c.querySelector('.b-address').textContent = branch.address;
+    c.querySelector('.b-phone').textContent = branch.phone;
+    cancel(btn);
+    toast('✓ Збережено');
+  } else {
+    toast('✗ Помилка збереження');
+  }
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
